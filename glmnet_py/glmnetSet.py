@@ -210,6 +210,7 @@ def glmnetSet(opts = None):
         "ltype"               : 'Newton',
         "standardize_resp"    : False,
         "mtype"               : 'ungrouped'
+        "dtype"               : scipy.float16
    }
     
     # quick return if no user opts
