@@ -244,18 +244,29 @@ from mrelnet import mrelnet
 from fishnet import fishnet
 
 def glmnet(*, x, y, family='gaussian', **options):
+    
+    if options['dtype'] == scipy.float64:
+        datatype = 'float64'
+    elif options['dtype'] == scipy.float32:
+        datatype = 'float32'
+    elif options['dtype'] == scipy.float16:
+        datatype = 'float16'
+    else:
+        raise ValueError("Data type can only be float16, float32 or float64.")
+        
+    dtype_converter = options['dtype']
         
     # check inputs: make sure x and y are scipy, float64 arrays
     # fortran order is not checked as we force a convert later 
     if not( isinstance(x, scipy.sparse.csc.csc_matrix) ):
-        if not( isinstance(x, scipy.ndarray) and x.dtype == 'float16'):
-            raise ValueError('x input must be a scipy float16 ndarray')
+        if not( isinstance(x, scipy.ndarray) and x.dtype == datatype):
+            raise ValueError(f'x input must be a scipy {datatype} ndarray')
     else:
-        if not (x.dtype == 'float16'):
-            raise ValueError('x input must be a float16 array')
+        if not (x.dtype == datatype):
+            raise ValueError(f'x input must be a {datatype} array')
             
-    if not( isinstance(y, scipy.ndarray) and y.dtype == 'float16'):
-            raise ValueError('y input must be a scipy float16 ndarray')
+    if not( isinstance(y, scipy.ndarray) and y.dtype == datatype):
+            raise ValueError(f'y input must be a scipy {datatype} ndarray')
 
     # create options
     if options is None:
@@ -279,28 +290,28 @@ def glmnet(*, x, y, family='gaussian', **options):
     #print(options)
     
     ## error check options parameters
-    alpha = scipy.float16(options['alpha'])
+    alpha = dtype_converter(options['alpha'])
     if alpha > 1.0 :
         print('Warning: alpha > 1.0; setting to 1.0')
-        options['alpha'] = scipy.float16(1.0)
+        options['alpha'] = dtype_converter(1.0)
  
     if alpha < 0.0 :
         print('Warning: alpha < 0.0; setting to 0.0')
-        options['alpha'] = scipy.float16(0.0)
+        options['alpha'] = dtype_converter(0.0)
 
-    parm  = scipy.float16(options['alpha'])
+    parm  = dtype_converter(options['alpha'])
     nlam  = scipy.int32(options['nlambda'])
     nobs, nvars  = x.shape
     
     # check weights length
     weights = options['weights']
     if len(weights) == 0:
-        weights = scipy.ones([nobs, 1], dtype = scipy.float16)
+        weights = scipy.ones([nobs, 1], dtype = dtype_converter)
     elif len(weights) != nobs:
         raise ValueError('Error: Number of elements in ''weights'' not equal to number of rows of ''x''')
     # check if weights are scipy nd array
-    if not( isinstance(weights, scipy.ndarray) and weights.dtype == 'float16'):
-        raise ValueError('weights input must be a scipy float16 ndarray')
+    if not( isinstance(weights, scipy.ndarray) and weights.dtype == datatype):
+        raise ValueError(f'weights input must be a scipy {datatype} ndarray')
     
     # check y length
     nrowy = y.shape[0]
@@ -345,8 +356,8 @@ def glmnet(*, x, y, family='gaussian', **options):
     if any(cl[1,:] < 0):
         raise ValueError('Error: The lower bound on cl must be non-negative')
         
-    cl[0, cl[0, :] == scipy.float16('-inf')] = -1.0*inparms['big']    
-    cl[1, cl[1, :] == scipy.float16('inf')]  =  1.0*inparms['big']    
+    cl[0, cl[0, :] == dtype_converter('-inf')] = -1.0*inparms['big']    
+    cl[1, cl[1, :] == dtype_converter('inf')]  =  1.0*inparms['big']    
     
     if cl.shape[1] < nvars:
         if cl.shape[1] == 1:
@@ -387,7 +398,7 @@ def glmnet(*, x, y, family='gaussian', **options):
         if (lambda_min >= 1):
             raise ValueError('ERROR: lambda_min should be less than 1')
         flmin = lambda_min
-        ulam  = scipy.zeros([1,1], dtype = scipy.float16)
+        ulam  = scipy.zeros([1,1], dtype = dtype_converter)
     else:
         flmin = 1.0
         if any(lambdau < 0):
