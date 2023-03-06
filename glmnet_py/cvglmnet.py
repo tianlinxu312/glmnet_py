@@ -237,7 +237,7 @@ def cvglmnet(*, x,
     #    options['offset'] = scipy.transpose(options['offset'])
     
     if len(options['weights']) == 0:
-        options['weights'] = scipy.ones([nobs, 1], dtype = scipy.float16)
+        options['weights'] = scipy.ones([nobs, 1], dtype = options['dtype'])
 
     # main call to glmnet        
     glmfit = glmnet(x = x, y = y, family = family, **options)    
